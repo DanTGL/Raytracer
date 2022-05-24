@@ -13,7 +13,7 @@
 
 #include <omp.h>
 
-#define SAMPLES_PER_PIXEL 4.0
+#define SAMPLES_PER_PIXEL 16
 
 struct VectorUchar {
     uint8_t x;
