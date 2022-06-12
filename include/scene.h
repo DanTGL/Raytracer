@@ -10,7 +10,7 @@ class Scene {
 public:
     Scene();
 
-    glm::vec3 raytrace(Camera camera, glm::vec2 uv);
+    glm::vec3 raytrace(Camera* camera, glm::vec2 uv);
 
     void addObject(HittableObject* obj);
     void addLight(Light light);

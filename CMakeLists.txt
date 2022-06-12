@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.11)
 project(Raytracer VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
+
+find_package(OpenGL REQUIRED)
 
 find_package(SDL2 REQUIRED)
 
@@ -26,7 +28,8 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
                  PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
 
 endif()
-target_link_libraries(Raytracer PUBLIC ${SDL2_LIBRARIES} OpenMP::OpenMP_CXX)
+
+target_link_libraries(Raytracer PUBLIC ${SDL2_LIBRARIES} OpenMP::OpenMP_CXX ${OPENGL_LIBRARIES} OpenGL GLEW)
 
 set(CPACK)
 

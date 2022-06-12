@@ -11,8 +11,8 @@ void Scene::addLight(Light light) {
     m_pLights.push_back(light);
 }
 
-glm::vec3 Scene::raytrace(Camera camera, glm::vec2 uv) {
-    Ray_t ray = camera.CreateRay(uv);
+glm::vec3 Scene::raytrace(Camera* camera, glm::vec2 uv) {
+    Ray_t ray = camera->CreateRay(uv);
     size_t bestIndex = -1;
     RayHit bestResult;
     bestResult.t = INFINITY;
