@@ -1,5 +1,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -111,6 +112,9 @@ const std::string computeShader = R"(
 layout(local_size_x = 1, local_size_y = 1) in;
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
+uniform vec3 sphere_c;
+uniform float sphere_r;
+
 void main() {
   // base pixel colour for image
   vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
@@ -120,7 +124,27 @@ void main() {
   //
   // interesting stuff happens here later
   //
+  float max_x = 5.0;
+  float max_y = 5.0;
+  ivec2 dims = imageSize(img_output);
+  float x = (float(pixel_coords.x * 2 - dims.x) / dims.x);
+  float y = (float(pixel_coords.y * 2 - dims.y) / dims.y);
+  vec3 ray_o = vec3(x * max_x, y * max_y, 0.0);
+  vec3 ray_d = vec3(0.0, 0.0, -1.0);
+  //vec3 sphere_c = vec3(0.0, 0.0, -10.0);
+  //float sphere_r = 1.0;
+
+  vec3 ray_v = ray_o - sphere_c;
+  float distance = dot(ray_v, ray_v);
+
+  vec3 omc = ray_o - sphere_c;
+  float den = pow(dot(ray_d, omc), 2.0) - distance + pow(sphere_r, 2.0);
   
+  if (den >= 0.0) {
+      pixel = vec4(0.4, 0.4, 1.0, 1.0);
+  }
+
+
   // output to a specific pixel in the image
   imageStore(img_output, pixel_coords, pixel);
 }
@@ -134,8 +158,7 @@ uniform sampler2D screenTexture;
 in vec2 TexCoords;
 
 void main() {
-    //FragColor = texture(screenTexture, TexCoords);
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    FragColor = texture(screenTexture, TexCoords);
 })";
 
 const std::string vertexShader = R"(#version 450
@@ -198,17 +221,16 @@ int main() {
     const uint32_t width = 256;
     const uint32_t height = 256;
     const double aspectRatio = width / height;
-    
+
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         return -1;
     }
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     SDL_Window* window = SDL_CreateWindow("Raytracer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
@@ -256,11 +278,11 @@ else if (GLEW_AMD_debug_output) {
 }
 
 
-//std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
+std::cout << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
 std::cout << "OpenGL Renderer: " << glGetString(GL_RENDERER) << std::endl;
-std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << '\n';
-std::cout << "OpenGL Shading Language: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
-std::cout << "OpenGL Max Texture s: " << glGetString(GL_VENDOR) << std::endl;
+std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+std::cout << "OpenGL Shading Language: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+//std::cout << "OpenGL Max Texture Size: " << glGetString(GL_MAX_TEXTURE_SIZE) << std::endl;
 
 
 
@@ -270,13 +292,13 @@ std::cout << "OpenGL Max Texture s: " << glGetString(GL_VENDOR) << std::endl;
         fprintf(stderr, "Renderer could not be created! SDL Error: %s\n", SDL_GetError());
         return -1;
     }*/
-    //GLuint tex_out = createTexture(width, height);
+    GLuint tex_out = createTexture(width, height);
 
-    //GLuint compute = CreateComputeProgram(computeShader);
-    //GLuint quadShader = CreateShaderProgram(vertexShader, fragmentShader);
+    GLuint compute = CreateComputeProgram(computeShader);
+    GLuint quadShader = CreateShaderProgram(vertexShader, fragmentShader);
 
-    //glUseProgram(quadShader);
-    //GLuint quadVAO = createQuadVao();
+    glUseProgram(quadShader);
+    GLuint quadVAO = createQuadVao();
 
     Material material1(2.0f, glm::vec3(1.0f, 0.5f, 0.01f), glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Material material2(0.02f, glm::vec3(0.30f, 0.15f, 0.75f), glm::vec3(0.75f, 0.25f, 0.5f), glm::vec3(0.1f, 0.2f, 0.25f));
@@ -316,14 +338,12 @@ std::cout << "OpenGL Max Texture s: " << glGetString(GL_VENDOR) << std::endl;
     //render(width, height, renderer, scene, camera);
     int indices[] = {0, 1, 2, 3, 4, 5};
 
-    bool isRunning = true;
-
-    while (isRunning) {
+    /*while (isRunning) {
         SDL_Event e;
         if (SDL_PollEvent(&e)) {
             switch (e.type) {
                 case SDL_KEYDOWN:
-                    if (e.key.keysym.sym != SDLK_ESCAPE) continue;
+                    if (e.key.keysym.sym != SDLK_ESCAPE) break;
                 case SDL_WINDOWEVENT_CLOSE:
                     isRunning = false;
                     break;
@@ -336,35 +356,43 @@ std::cout << "OpenGL Max Texture s: " << glGetString(GL_VENDOR) << std::endl;
         SDL_GL_SwapWindow(window);
 
 
-    }
-    //for (int i = 0; i < 2000; i++) {
-        //{   // Launch compute shaders
-            //glUseProgram(compute);
-            //glDispatchCompute((GLuint) width, (GLuint) height, 1);
-        //}
+    }*/
+
+    glm::vec3 sphereC(0.0, 0.0, -10.0);
+    float sphereR = 1.0;
+
+    auto uSphereCenter = glGetUniformLocation(compute, "sphere_c");
+    auto uSphereRadius = glGetUniformLocation(compute, "sphere_r");
+    for (int i = 0; i < 5; i++) {
+        {   // Launch compute shaders
+            glUseProgram(compute);
+            glUniform3fv(uSphereCenter, 1, glm::value_ptr(sphereC));
+            glUniform1f(uSphereRadius, sphereR);
+            glDispatchCompute((GLuint) width, (GLuint) height, 1);
+        } 
 
         // Make sure writing to image has finished before read
-        //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        //{   // Normal drawing pass
+        {   // Normal drawing pass
+            glClear(GL_COLOR_BUFFER_BIT);
+            glUseProgram(quadShader);
+            glBindVertexArray(quadVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, tex_out);
             
-            //glUseProgram(quadShader);
-            //glBindVertexArray(quadVAO);
-            //glActiveTexture(0);
-            //glBindTexture(GL_TEXTURE_2D, tex_out);
-            
-            //glDrawElements(GL_TRIANGLES, 6, GL_FLOAT, indices);
-        //}
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
 
 
-        //SDL_GL_SwapWindow(window);
+        SDL_GL_SwapWindow(window);
         
     //camera.Move(glm::vec3(0.0f, 1.0f, 0.0f));
     //spheres[0].m_pRadius += 0.25f;
     //SDL_RenderPresent(renderer);
 
-    //SDL_Delay(1);
-    //}
+        SDL_Delay(1000);
+    }
 
     auto stop = std::chrono::high_resolution_clock::now();
 

@@ -29,7 +29,7 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
 
 endif()
 
-target_link_libraries(Raytracer PUBLIC ${SDL2_LIBRARIES} OpenMP::OpenMP_CXX ${OPENGL_LIBRARIES} OpenGL GLEW)
+target_link_libraries(Raytracer PUBLIC GL GLU ${SDL2_LIBRARIES} OpenMP::OpenMP_CXX GLEW)
 
 set(CPACK)
 
