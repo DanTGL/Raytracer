@@ -35,7 +35,11 @@ void render(uint32_t width, uint32_t height, SDL_Renderer* renderer, Scene* scen
                 float u = x + ((double) rand() / (double) RAND_MAX);
                 float v = y + ((double) rand() / (double) RAND_MAX);
 
-                color += scene->raytrace(camera, glm::vec2(u, v) * uvMult - 1.0f);
+                glm::vec2 uv = glm::vec2(u, v) * uvMult - 1.0f;
+
+                Ray_t ray = camera.CreateRay(uv);
+
+                color += scene->raytrace(&ray);
             }
 
             color /= SAMPLES_PER_PIXEL;

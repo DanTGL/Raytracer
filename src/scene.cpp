@@ -11,14 +11,15 @@ void Scene::addLight(Light light) {
     m_pLights.push_back(light);
 }
 
-glm::vec3 Scene::raytrace(Camera camera, glm::vec2 uv) {
-    Ray_t ray = camera.CreateRay(uv);
+glm::vec3 Scene::raytrace(Ray_t* ray, int depth) {
+    if (depth >= MAX_DEPTH) return glm::vec3(0.0);
+    
     size_t bestIndex = -1;
     RayHit bestResult;
     bestResult.t = INFINITY;
     for (size_t i = 0; i < m_pObjects.size(); ++i) {
         RayHit hitResult;
-        if (m_pObjects[i]->hit(ray, hitResult)) {
+        if (m_pObjects[i]->hit(*ray, hitResult)) {
             if (hitResult.t < bestResult.t) {
                 bestResult = hitResult;
                 bestIndex = i;
@@ -34,7 +35,7 @@ glm::vec3 Scene::raytrace(Camera camera, glm::vec2 uv) {
         float diff = glm::max(glm::dot(norm, lightDir), 0.0f);
         glm::vec3 diffuse = m_pLights[0].m_pLightColor * (diff * m_pObjects[bestIndex]->m_pMaterial.diffuse);
 
-        glm::vec3 viewDir = glm::normalize(ray.origin - bestResult.hitPoint);
+        glm::vec3 viewDir = glm::normalize(ray->origin - bestResult.hitPoint);
         glm::vec3 reflectDir = glm::reflect(-lightDir, norm);
         float spec = glm::pow(glm::max(glm::dot(viewDir, reflectDir), 0.0f), m_pObjects[bestIndex]->m_pMaterial.shininess);
         glm::vec3 specular = m_pLights[0].m_pLightColor * (spec * m_pObjects[bestIndex]->m_pMaterial.specular);

@@ -6,11 +6,13 @@
 #include "ray.h"
 #include "camera.h"
 
+#define MAX_DEPTH 2
+
 class Scene {
 public:
     Scene();
 
-    glm::vec3 raytrace(Camera camera, glm::vec2 uv);
+    glm::vec3 raytrace(Ray_t* ray, int depth=0);
 
     void addObject(HittableObject* obj);
     void addLight(Light light);
